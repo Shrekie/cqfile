@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::error::Error;
+use std::process;
 
 pub struct Invoker<'a> {
-  pub commands: HashMap<&'a str, &'a Command>,
+  pub commands: HashMap<String, &'a Command>,
 }
 
 impl<'a> Invoker<'a> {
@@ -12,41 +12,40 @@ impl<'a> Invoker<'a> {
     };
   }
 
-  pub fn enable(&mut self, name: &'a str, command: &'a Command) {
+  pub fn enable(&mut self, name: String, command: &'a Command) {
     self.commands.insert(name, command);
   }
 
-  pub fn info(&self, name: &'a str) -> &'a str {
-    match self.commands.get(name) {
-      Some(_x) => name,
-      None => "noo",
-    }
+  pub fn info(&self, name: &'a str) -> &String {
+    let command = self.commands.get(name).unwrap_or_else(|| {
+      println!("Could not find command");
+      process::exit(1);
+    });
+
+    &command.description
   }
 }
 
 pub struct Command {
-  //fn new(&self) -> Result<(), Box<dyn Error>>;
+  description: String,
 }
 
-pub struct Search {
-  argument: u32,
-}
-
-impl Search {
-  pub fn new() -> Command {
-    Command {}
+impl Command {
+  pub fn new(description: String) -> Command {
+    Command { description }
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+
   #[test]
   fn add_command_and_check_info_exists() {
     let mut invoker = Invoker::new();
-    let search = Search::new();
-    invoker.enable("search", &search);
+    let search = Command::new(String::from("Show all lines with query in it"));
+    invoker.enable(String::from("search"), &search);
 
-    assert_eq!(invoker.info("search"), "search");
+    assert_eq!(invoker.info("search"), "Show all lines with query in it");
   }
 }
