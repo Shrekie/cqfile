@@ -57,7 +57,8 @@ mod tests {
     invoker.enable(String::from("search"), &search);
     assert_eq!(invoker.info("search"), "Show all lines with query in it");
   }
-
+  
+  #[test]
   fn split_string_input_to_three_query_parts() {
     let mut scanner = Scanner::new();
     let query = scanner.encode("file.txt search Victoria");
