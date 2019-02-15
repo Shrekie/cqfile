@@ -22,17 +22,27 @@ impl<'a> Invoker<'a> {
       process::exit(1);
     });
 
-    &command.description
+    command.description()
   }
 }
 
-pub struct Command {
+pub trait Command {
+  fn description(&self) -> &String;
+}
+
+pub struct Search {
   description: String,
 }
 
-impl Command {
-  pub fn new(description: String) -> Command {
-    Command { description }
+impl Command for Search {
+  fn description(&self) -> &String {
+    &self.description
+  }
+}
+
+impl Search {
+  fn new(description: String) -> Search {
+    Search { description }
   }
 }
 
@@ -43,7 +53,7 @@ mod tests {
   #[test]
   fn add_command_and_check_info_exists() {
     let mut invoker = Invoker::new();
-    let search = Command::new(String::from("Show all lines with query in it"));
+    let search = Search::new(String::from("Show all lines with query in it"));
     invoker.enable(String::from("search"), &search);
 
     assert_eq!(invoker.info("search"), "Show all lines with query in it");
