@@ -26,12 +26,49 @@ impl<'a> Invoker<'a> {
   }
 }
 
+pub struct Query {
+  pub target: String,
+  pub filename: String,
+  pub argument: String,
+}
+
+impl Query {
+  fn new(target: String, filename: String, argument: String) -> Query {
+    Query {
+      target,
+      filename,
+      argument,
+    }
+  }
+
+  fn parts(&self) -> (&String, &String, &String) {
+    (&self.target, &self.filename, &self.argument)
+  }
+}
+
+mod scanner {
+  use super::*;
+
+  pub fn encode(args: &[String]) -> Query {
+    if args.len() < 4 {
+      println!("Too few arguments");
+      process::exit(1);
+    }
+
+    let target = args[1].clone();
+    let command = args[2].clone();
+    let argument = args[3].clone();
+
+    Query::new(target, command, argument)
+  }
+}
+
 pub trait Command {
   fn description(&self) -> &String;
 }
 
 pub struct Search {
-  description: String,
+  pub description: String,
 }
 
 impl Command for Search {
@@ -57,11 +94,25 @@ mod tests {
     invoker.enable(String::from("search"), &search);
     assert_eq!(invoker.info("search"), "Show all lines with query in it");
   }
-  
+
   #[test]
   fn split_string_input_to_three_query_parts() {
-    let mut scanner = Scanner::new();
-    let query = scanner.encode("file.txt search Victoria");
-    assert_eq!(query.parts(), ["file.txt", "search", "Victoria"]);
+    let input = [
+      String::from("cqfile"),
+      String::from("file.txt"),
+      String::from("search"),
+      String::from("Victoria"),
+    ];
+
+    let query = scanner::encode(&input);
+    let parts = query.parts();
+    assert_eq!(
+      parts,
+      (
+        &String::from("file.txt"),
+        &String::from("search"),
+        &String::from("Victoria"),
+      )
+    );
   }
 }
