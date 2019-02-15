@@ -63,23 +63,22 @@ mod scanner {
   }
 }
 
+// #TODO: Enable hashmap of invoker to take ownership
 pub trait Command {
   fn description(&self) -> &str;
 }
 
-pub struct Search<'a> {
-  pub description: &'a str,
-}
+pub struct Search;
 
-impl<'a> Command for Search<'a> {
+impl Command for Search {
   fn description(&self) -> &str {
-    self.description
+    "Show all lines with query in it"
   }
 }
 
-impl<'a> Search<'a> {
-  fn new(description: &str) -> Search {
-    Search { description }
+impl Search {
+  fn new() -> Search {
+    Search {}
   }
 }
 
@@ -90,7 +89,7 @@ mod tests {
   #[test]
   fn add_command_and_check_info_exists() {
     let mut invoker = Invoker::new();
-    let search = Search::new("Show all lines with query in it");
+    let search = Search::new();
     invoker.enable("search", &search);
     assert_eq!(invoker.info("search"), "Show all lines with query in it");
   }
@@ -114,5 +113,22 @@ mod tests {
         &String::from("Victoria"),
       )
     );
+  }
+
+  #[test]
+  fn take_query_give_to_file_name_print_command() {
+    let mut invoker = Invoker::new();
+    let file_name = FileName::new();
+    invoker.enable("filename", &file_name);
+
+    let input = [
+      String::from("cqfile"),
+      String::from("file.txt"),
+      String::from("search"),
+      String::from("Victoria"),
+    ];
+    let query = scanner::encode(&input);
+
+    invoker.run(&query)
   }
 }
