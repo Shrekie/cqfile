@@ -1,5 +1,9 @@
+use expression::Command;
 use std::collections::HashMap;
+use std::fs;
 use std::process;
+
+pub mod expression;
 
 pub struct Invoker<'a> {
   pub commands: HashMap<&'a str, &'a Command>,
@@ -16,37 +20,37 @@ impl<'a> Invoker<'a> {
     self.commands.insert(name, command);
   }
 
-  pub fn info(&self, name: &'a str) -> &str {
+  pub fn get(&self, name: &str) -> &Command {
     let command = self.commands.get(name).unwrap_or_else(|| {
       println!("Could not find command");
       process::exit(1);
     });
 
-    command.description()
+    *command
   }
 }
 
 pub struct Query {
-  pub target: String,
   pub filename: String,
+  pub command: String,
   pub argument: String,
 }
 
 impl Query {
-  fn new(target: String, filename: String, argument: String) -> Query {
+  fn new(filename: String, command: String, argument: String) -> Query {
     Query {
-      target,
       filename,
+      command,
       argument,
     }
   }
 
   fn parts(&self) -> (&String, &String, &String) {
-    (&self.target, &self.filename, &self.argument)
+    (&self.filename, &self.command, &self.argument)
   }
 }
 
-mod scanner {
+pub mod scanner {
   use super::*;
 
   pub fn encode(args: &[String]) -> Query {
@@ -55,43 +59,22 @@ mod scanner {
       process::exit(1);
     }
 
-    let target = args[1].clone();
+    let filename = args[1].clone();
     let command = args[2].clone();
     let argument = args[3].clone();
 
-    Query::new(target, command, argument)
+    Query::new(filename, command, argument)
   }
-}
 
-// #TODO: Enable hashmap of invoker to take memory
-pub trait Command {
-  fn description(&self) -> &str;
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Vec<&'a str>;
-}
-
-pub struct Search;
-
-impl Command for Search {
-  fn description(&self) -> &str {
-    "Show all lines with query in it"
-  }
-  
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
-
-    for line in contents.lines() {
-      if line.contains(argument) {
-        results.push(line);
+  pub fn read(filename: &str) -> String {
+    match fs::read_to_string(filename) {
+      Ok(v) => v,
+      Err(_e) => {
+        println!("Can't read file {}", filename);
+        process::exit(1);
       }
     }
 
-    results
-  }
-}
-
-impl Search {
-  fn new() -> Search {
-    Search {}
   }
 }
 
@@ -100,11 +83,13 @@ mod tests {
   use super::*;
 
   #[test]
-  fn add_command_and_check_info_exists() {
+  fn add_command_and_get_command_info() {
     let mut invoker = Invoker::new();
-    let search = Search::new();
+    let search = expression::Search::new();
     invoker.enable("search", &search);
-    assert_eq!(invoker.info("search"), "Show all lines with query in it");
+    
+    let command = invoker.get("search");
+    assert_eq!(command.description(), "Show all lines with query in it");
   }
 
   #[test]
@@ -129,16 +114,11 @@ mod tests {
   }
 
   #[test]
-  fn run_search_command() {
-    let argument = "duct";
+  fn read_file_contents() {
     let contents = "\
-Rust:
-safe, fast, productive.
-Pick three.";
-    let search = Search::new();
-    assert_eq!(
-      vec!["safe, fast, productive."],
-      search.operate(argument, contents)
-    );
+hello there
+not here
+hello here";
+    assert_eq!(scanner::read("file.txt"), contents);
   }
 }
