@@ -9,11 +9,12 @@ fn main() {
   let contents = scanner::read(&query.filename);
 
   match cmd_query(&query, &contents) {
-    CommandResult::Number(n) => println!("{}", n),
-    CommandResult::Lines(l) => {
+    Ok(CommandResult::Sum(n)) => println!("{}", n),
+    Ok(CommandResult::Lines(l)) => {
       for line in l {
         println!("{}", line);
       }
     }
+    Err(e) => println!("{}", e),
   };
 }

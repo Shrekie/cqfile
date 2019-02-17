@@ -7,16 +7,16 @@ use terminal::scanner;
 use terminal::Invoker;
 use terminal::Query;
 
-pub fn cmd_query<'a>(query: &Query, file_contents: &'a str) -> CommandResult<'a> {
+pub fn cmd_query<'a>(query: &Query, file_contents: &'a str) -> Result<CommandResult<'a>, &'a str> {
   let mut invoker = Invoker::new();
 
   let search = Search::new();
   invoker.enable("search", &search);
-  let count = Count::new();
-  invoker.enable("count", &count);
+  let counts = Count::new();
+  invoker.enable("count", &counts);
 
   let command = invoker.get(&query.command);
-  let result = command.operate(&query.argument, &file_contents);
+  let result = command.operate(&query.argument, file_contents);
 
   result
 }
@@ -42,12 +42,11 @@ mod tests {
     let query = scanner::encode(&input);
     let file_contents = scanner::read(&query.filename);
 
-    let result = match command.operate(&query.argument, &file_contents) {
-      CommandResult::Lines(s) => s,
-      _ => vec!["safe, fast, productive."],
+    match command.operate(&query.argument, &file_contents) {
+      Ok(CommandResult::Lines(l)) => assert_eq!(vec!["hello there"], l),
+      Err(e) => println!("{}", e),
+      _ => (),
     };
-
-    assert_eq!(vec!["hello there"], result);
   }
 
   #[test]
@@ -60,12 +59,12 @@ mod tests {
     ];
     let query = scanner::encode(&input);
     let contents = scanner::read(&query.filename);
-    let result = match cmd_query(&query, &contents) {
-      CommandResult::Lines(s) => s,
-      _ => vec!["MAKE ME BOXED WITH RESULT"],
-    };
 
-    assert_eq!(vec!["hello there"], result);
+    match cmd_query(&query, &contents) {
+      Ok(CommandResult::Lines(l)) => assert_eq!(vec!["hello there"], l),
+      Err(e) => println!("{}", e),
+      _ => (),
+    };
   }
 
 }

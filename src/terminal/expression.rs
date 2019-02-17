@@ -2,12 +2,12 @@
 
 pub enum CommandResult<'a> {
   Lines(Vec<&'a str>),
-  Number(usize),
+  Sum(usize),
 }
 
 pub trait Command {
   fn description(&self) -> &str;
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> CommandResult<'a>;
+  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Result<CommandResult<'a>, &'a str>;
 }
 
 pub struct Search;
@@ -17,7 +17,7 @@ impl Command for Search {
     "Show all lines with query in it"
   }
 
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> CommandResult<'a> {
+  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Result<CommandResult<'a>, &'a str> {
     let mut results = Vec::new();
 
     for line in contents.lines() {
@@ -25,8 +25,8 @@ impl Command for Search {
         results.push(line);
       }
     }
-
-    CommandResult::Lines(results)
+  
+    Ok(CommandResult::Lines(results))
   }
 }
 
@@ -40,10 +40,10 @@ pub struct Count;
 
 impl Command for Count {
   fn description(&self) -> &str {
-    "Show all lines with query in it"
+    "Count all times query matches"
   }
 
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> CommandResult<'a> {
+  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Result<CommandResult<'a>, &'a str> {
     let mut results = Vec::new();
 
     for line in contents.lines() {
@@ -52,12 +52,12 @@ impl Command for Count {
       }
     }
 
-    let count = results.iter().count();
+    let mut count = results.iter().count();
     if count > 0 {
-      CommandResult::Number(count + 1)
-    } else {
-      CommandResult::Number(0)
-    }
+      count = count + 1
+    };
+
+    Ok(CommandResult::Sum(count))
   }
 }
 
@@ -80,12 +80,11 @@ safe, fast, productive.
 Pick three.";
     let search = Search::new();
 
-    let result = match search.operate(argument, contents) {
-      CommandResult::Lines(s) => s,
-      _ => vec!["safe, fast, productive."],
+    match search.operate(argument, contents) {
+      Ok(CommandResult::Lines(l)) => assert_eq!(vec!["safe, fast, productive."], l),
+      Err(e) => println!("{}", e),
+      _ => (),
     };
-
-    assert_eq!(vec!["safe, fast, productive."], result);
   }
 
   #[test]
@@ -96,11 +95,11 @@ Rust:
 safe, fast, productive.
 Pick three.";
     let count = Count::new();
-    let result = match count.operate(argument, contents) {
-      CommandResult::Number(s) => s,
-      _ => 0,
-    };
 
-    assert_eq!(2, result);
+    match count.operate(argument, contents) {
+      Ok(CommandResult::Sum(s)) => assert_eq!(2, s),
+      Err(e) => println!("{}", e),
+      _ => (),
+    };
   }
 }
