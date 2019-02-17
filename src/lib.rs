@@ -1,14 +1,13 @@
 pub mod terminal;
 
 use terminal::expression::CommandResult;
-use terminal::expression::Search;
 use terminal::expression::Count;
+use terminal::expression::Search;
 use terminal::scanner;
 use terminal::Invoker;
 use terminal::Query;
 
 pub fn cmd_query<'a>(query: &Query, file_contents: &'a str) -> CommandResult<'a> {
-
   let mut invoker = Invoker::new();
 
   let search = Search::new();

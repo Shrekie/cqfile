@@ -74,7 +74,6 @@ pub mod scanner {
         process::exit(1);
       }
     }
-
   }
 }
 
@@ -87,7 +86,7 @@ mod tests {
     let mut invoker = Invoker::new();
     let search = expression::Search::new();
     invoker.enable("search", &search);
-    
+
     let command = invoker.get("search");
     assert_eq!(command.description(), "Show all lines with query in it");
   }

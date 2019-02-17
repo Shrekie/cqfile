@@ -51,10 +51,13 @@ impl Command for Count {
         results.push(line);
       }
     }
-    
+
     let count = results.iter().count();
-    if count > 0 {CommandResult::Number(count+1)}
-    else {CommandResult::Number(0)}
+    if count > 0 {
+      CommandResult::Number(count + 1)
+    } else {
+      CommandResult::Number(0)
+    }
   }
 }
 
