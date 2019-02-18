@@ -1,23 +1,78 @@
 // #TODO: Enable hashmap of invoker to take memory
 
-pub enum CommandResult<'a> {
-  Lines(Vec<&'a str>),
-  Sum(usize),
+pub trait CommandResult {
+  type Item;
+  type Value;
+  fn display(&self) -> Result<&Self::Item, &str>;
+  fn as_value(&mut self) -> Result<&Self::Value, &str>;
 }
 
-pub trait Command {
+pub struct Line<'a> {
+  result: Vec<&'a str>,
+}
+
+pub struct Sum {
+  result: usize,
+}
+
+impl<'a> CommandResult for Line<'a> {
+  type Item = Line<'a>;
+  type Value = Vec<&'a str>;
+
+  fn display(&self) -> Result<&Self::Item, &str> {
+    for line in &self.result {
+      println!("{}", line);
+    }
+    Ok(self)
+  }
+
+  fn as_value(&mut self) -> Result<&Self::Value, &str> {
+    Ok(&self.result)
+  }
+}
+
+impl CommandResult for Sum {
+  type Item = Sum;
+  type Value = usize;
+
+  fn display(&self) -> Result<&Self::Item, &str> {
+    println!("{}", self.result);
+    Ok(self)
+  }
+
+  fn as_value(&mut self) -> Result<&Self::Value, &str> {
+    Ok(&self.result)
+  }
+}
+
+impl Sum {
+  pub fn new(result: usize) -> Sum {
+    Sum { result }
+  }
+}
+
+impl<'a> Line<'a> {
+  pub fn new(result: Vec<&'a str>) -> Line<'a> {
+    Line { result }
+  }
+}
+
+pub trait Command<'a> {
+  type Item;
   fn description(&self) -> &str;
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Result<CommandResult<'a>, &'a str>;
+  fn operate(&self, argument: &str, contents: &'a str) -> Result<Self::Item, &'a str>;
 }
 
 pub struct Search;
 
-impl Command for Search {
+impl<'a> Command<'a> for Search {
+  type Item = Line<'a>;
+
   fn description(&self) -> &str {
     "Show all lines with query in it"
   }
 
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Result<CommandResult<'a>, &'a str> {
+  fn operate(&self, argument: &str, contents: &'a str) -> Result<Self::Item, &'a str> {
     let mut results = Vec::new();
 
     for line in contents.lines() {
@@ -25,8 +80,8 @@ impl Command for Search {
         results.push(line);
       }
     }
-  
-    Ok(CommandResult::Lines(results))
+
+    Ok(Line::new(results))
   }
 }
 
@@ -38,12 +93,14 @@ impl Search {
 
 pub struct Count;
 
-impl Command for Count {
+impl<'a> Command<'a> for Count {
+  type Item = Sum;
+
   fn description(&self) -> &str {
     "Count all times query matches"
   }
 
-  fn operate<'a>(&self, argument: &str, contents: &'a str) -> Result<CommandResult<'a>, &'a str> {
+  fn operate(&self, argument: &str, contents: &'a str) -> Result<Self::Item, &'a str> {
     let mut results = Vec::new();
 
     for line in contents.lines() {
@@ -57,7 +114,7 @@ impl Command for Count {
       count = count + 1
     };
 
-    Ok(CommandResult::Sum(count))
+    Ok(Sum::new(count))
   }
 }
 
@@ -80,8 +137,12 @@ safe, fast, productive.
 Pick three.";
     let search = Search::new();
 
-    match search.operate(argument, contents) {
-      Ok(CommandResult::Lines(l)) => assert_eq!(vec!["safe, fast, productive."], l),
+    match search
+      .operate(argument, contents)
+      .and_then(|l| l.display())
+      .and_then(|r| r.as_value())
+    {
+      Ok(r) => assert_eq!(vec!["safe, fast, productive."], *r),
       Err(e) => println!("{}", e),
       _ => (),
     };
@@ -96,8 +157,8 @@ safe, fast, productive.
 Pick three.";
     let count = Count::new();
 
-    match count.operate(argument, contents) {
-      Ok(CommandResult::Sum(s)) => assert_eq!(2, s),
+    match count.operate(argument, contents).and_then(|s| s.display()) {
+      Ok(s) => assert_eq!(2, *s),
       Err(e) => println!("{}", e),
       _ => (),
     };

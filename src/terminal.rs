@@ -5,28 +5,31 @@ use std::process;
 
 pub mod expression;
 
-pub struct Invoker<'a> {
-  pub commands: HashMap<&'a str, &'a Command>,
+pub struct Invoker<'a, T> {
+  pub commands: HashMap<&'a str, &'a T>,
 }
 
-impl<'a> Invoker<'a> {
-  pub fn new() -> Invoker<'a> {
+impl<'a, T> Invoker<'a, T>
+where
+  T: Command<'a>,
+{
+  pub fn new() -> Invoker<'a, T> {
     return Invoker {
       commands: HashMap::new(),
     };
   }
 
-  pub fn enable(&mut self, name: &'a str, command: &'a Command) {
+  pub fn enable(&mut self, name: &'a str, command: &'a T) {
     self.commands.insert(name, command);
   }
 
-  pub fn get(&self, name: &str) -> &Command {
+  pub fn get(&self, name: &str) -> &T {
     let command = self.commands.get(name).unwrap_or_else(|| {
       println!("Could not find command");
       process::exit(1);
     });
 
-    *command
+    command
   }
 }
 

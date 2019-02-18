@@ -1,25 +1,12 @@
 pub mod terminal;
-
+use terminal::expression::Command;
 use terminal::expression::CommandResult;
 use terminal::expression::Count;
 use terminal::expression::Search;
+use terminal::expression::Line;
 use terminal::scanner;
 use terminal::Invoker;
 use terminal::Query;
-
-pub fn cmd_query<'a>(query: &Query, file_contents: &'a str) -> Result<CommandResult<'a>, &'a str> {
-  let mut invoker = Invoker::new();
-
-  let search = Search::new();
-  invoker.enable("search", &search);
-  let counts = Count::new();
-  invoker.enable("count", &counts);
-
-  let command = invoker.get(&query.command);
-  let result = command.operate(&query.argument, file_contents);
-
-  result
-}
 
 #[cfg(test)]
 mod tests {
@@ -42,29 +29,10 @@ mod tests {
     let query = scanner::encode(&input);
     let file_contents = scanner::read(&query.filename);
 
-    match command.operate(&query.argument, &file_contents) {
-      Ok(CommandResult::Lines(l)) => assert_eq!(vec!["hello there"], l),
+    match command.operate(&query.argument, &file_contents).and_then(|l| l.display()).and_then(|r| r.as_value()) {
+      Ok(r) => assert_eq!(vec!["safe, fast, productive."], *r),
       Err(e) => println!("{}", e),
       _ => (),
     };
   }
-
-  #[test]
-  fn run_command() {
-    let input = vec![
-      String::from("cqfile"),
-      String::from("file.txt"),
-      String::from("search"),
-      String::from("there"),
-    ];
-    let query = scanner::encode(&input);
-    let contents = scanner::read(&query.filename);
-
-    match cmd_query(&query, &contents) {
-      Ok(CommandResult::Lines(l)) => assert_eq!(vec!["hello there"], l),
-      Err(e) => println!("{}", e),
-      _ => (),
-    };
-  }
-
 }
